@@ -50,7 +50,7 @@ public class FileService {
                 writeLock.unlock();
             }
         } catch (Exception exception) {
-            logger.error("Can't save to DB!!!\n" + exception.getMessage());
+            logger.error("Can't save to DB!!!\n" + exception.getCause());
             return null;
         }
     }
@@ -72,17 +72,18 @@ public class FileService {
         final DecimalFormat df = new DecimalFormat("0.00");
         int id = 1;
         File folder = new File(path);
-        File[] listOfFiles = folder.listFiles();
-        for (int i = 0; i < Objects.requireNonNull(listOfFiles).length; i++) {
-            if (listOfFiles[i].getName().endsWith(FILE_TYPE)) {
-                com.audio.codes.server.model.File file = new com.audio.codes.server.model.File(id++, listOfFiles[i].getName());
-                file.setSize(df.format(file.getFileSize(listOfFiles[i])));
-                String length = file.getFileLength(listOfFiles[i]);
-                if (!length.equals("")) {
+        File[] allFiles = folder.listFiles();
+        for (int i = 0; i < Objects.requireNonNull(allFiles).length; i++) {
+            File fileFromFolder = allFiles[i];
+            if (fileFromFolder.getName().endsWith(FILE_TYPE)) {
+                com.audio.codes.server.model.File file = new com.audio.codes.server.model.File(id++, fileFromFolder.getName());
+                file.setSize(df.format(file.getFileSize(fileFromFolder)));
+                String length = file.getFileLength(fileFromFolder);
+                if (length != null) {
                     file.setLength(length);
                     fileList.add(file);
                 } else {
-                    throw new Exception("Item " + file.getFileName() + " cant display length!!!");
+                    throw new Exception("Can't calculate length of file: " + file.getFileName() +" !!!");
                 }
             }
         }

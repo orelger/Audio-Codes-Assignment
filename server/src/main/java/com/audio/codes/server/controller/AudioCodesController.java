@@ -34,10 +34,10 @@ public class AudioCodesController {
     @RequestMapping(value = "save", method = RequestMethod.POST)
     public ResponseEntity<List<File>> saveAllFiles(@RequestBody String path) {
         try {
-            logger.info("Save all MP3 files from path: " + path);
+            logger.info("Save all MP3 files from path: " + path + " to DB.");
             return ResponseEntity.ok(fileService.saveAllMPThreeFiles(path));
         } catch (Exception exception) {
-            logger.error("Can't save to DB!!!" + exception.getMessage());
+            logger.error("Can't save files form " + path + " to DB!!! " + exception.getMessage());
             return ResponseEntity.noContent().build();
         }
     }

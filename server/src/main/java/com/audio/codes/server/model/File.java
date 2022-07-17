@@ -62,7 +62,7 @@ public class File {
         } catch (UnsupportedAudioFileException | IOException e) {
             e.printStackTrace();
         }
-        return "";
+        return null;
     }
 
     private String getDurationWithMp3Spi(java.io.File file) throws UnsupportedAudioFileException, IOException {
