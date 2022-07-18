@@ -43,16 +43,16 @@ public class AudioCodesController {
     }
 
     @RequestMapping(value = "select", method = RequestMethod.POST)
-    public ResponseEntity<Void> selectItem(Principal principal, @RequestBody String name) {
+    public ResponseEntity<Void> selectItem(@RequestBody String name) {
         try {
             logger.info("song: " + name + " was selected");
             if (fileService.selectItem(name)) {
                 return ResponseEntity.ok().build();
             } else {
-                throw new Exception("The file: " + name + " does not exist!!!");
+                throw new Exception("There was a problem with selecting files!!!");
             }
         } catch (Exception exception) {
-            logger.error(exception.getMessage());
+            logger.error("Message: " + exception.getMessage() + "Cause: " + exception.getCause());
             return ResponseEntity.noContent().build();
         }
     }

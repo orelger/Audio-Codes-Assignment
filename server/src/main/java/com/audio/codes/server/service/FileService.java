@@ -1,6 +1,7 @@
 package com.audio.codes.server.service;
 
 import com.audio.codes.server.repository.FileRepository;
+import com.google.gson.Gson;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,10 +10,8 @@ import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.text.DecimalFormat;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -30,11 +29,13 @@ public class FileService {
     private final Lock readLock = rwLock.readLock();
     private final Lock writeLock = rwLock.writeLock();
     private final String FILE_TYPE;
+    private final Set<String> selectedFileCache;
 
     @Autowired
     public FileService(FileRepository fileRepository, @Value("${type.file}") String file_type) {
         this.fileRepository = fileRepository;
         FILE_TYPE = file_type;
+        selectedFileCache = new HashSet<>();
     }
 
     public List<com.audio.codes.server.model.File> saveAllMPThreeFiles(String path) {
@@ -83,7 +84,7 @@ public class FileService {
                     file.setLength(length);
                     fileList.add(file);
                 } else {
-                    throw new Exception("Can't calculate length of file: " + file.getFileName() +" !!!");
+                    throw new Exception("Can't calculate length of file: " + file.getFileName() + " !!!");
                 }
             }
         }
@@ -91,26 +92,23 @@ public class FileService {
         return fileList;
     }
 
-    public boolean selectItem(String name) throws Exception {
-        String[] names = isItemSelected(name);
-        for (String str : names) {
-            Optional<com.audio.codes.server.model.File> file;
-            file = findByFileName(str);
+    public boolean selectItem(String name) {
+        AtomicBoolean isOk = new AtomicBoolean(true);
+        isItemSelected(name);
+        selectedFileCache.forEach(item -> {
+            Optional<com.audio.codes.server.model.File> file = findByFileName(item);
             if (file.isPresent()) {
                 if (file.get().getValid() == null) {
                     file.get().setValid(true);
-                } else {
-                    file.get().setValid(null);
+                    saveFile(file.get());
                 }
-
-                saveFile(file.get());
             } else {
+                isOk.set(false);
                 logger.info("Can't find song name :" + name);
-                throw new Exception("Can't find song name :" + name);
             }
-        }
-        logger.info(name + " was selected successfully.");
-        return true;
+        });
+
+        return isOk.get();
     }
 
     public void saveFile(com.audio.codes.server.model.File file) {
@@ -137,19 +135,26 @@ public class FileService {
         return file;
     }
 
-    private String[] isItemSelected(String name) {
-        String[] arr;
-        if (name.contains("\nSecondItem")) {
-            String[] names = name.split("\nSecondItem");
-            arr = new String[names.length];
-            for (int i = 0; i < names.length; i++) {
-                arr[i] = names[i];
+    private void isItemSelected(String name) {
+        Gson gson = new Gson();
+        List<String> newItems = gson.fromJson(name, List.class);
+        selectedFileCache.addAll(newItems);
+        List<String> itemToRelease = new ArrayList<>();
+        selectedFileCache.forEach(item -> {
+            if (!newItems.contains(item)) {
+                itemToRelease.add(item);
+                Optional<com.audio.codes.server.model.File> file = findByFileName(item);
+                if (file.isPresent()) {
+                    if (file.get().getValid()) {
+                        file.get().setValid(null);
+                        saveFile(file.get());
+                    }
+                } else {
+                    logger.error("Can't find song name :" + name);
+                }
             }
-        } else {
-            arr = new String[1];
-            arr[0] = name;
-        }
+        });
 
-        return arr;
+        itemToRelease.forEach(selectedFileCache::remove);
     }
 }
