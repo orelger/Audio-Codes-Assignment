@@ -12,9 +12,7 @@ import utils.HttpClient;
 
 import java.io.File;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.ResourceBundle;
+import java.util.*;
 
 import static utils.Utils.*;
 
@@ -28,41 +26,38 @@ public class MainPage implements Initializable {
     public ListView<FileItem> listView = new ListView<>();
     @FXML
     public Button folder;
+    private List<String> selectedFile;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         folder.setOnMouseClicked(this::chooseFolder);
-//        listView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+        listView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
         getSelectableItem();
+        selectedFile = new ArrayList<>();
     }
 
     private void getSelectableItem() {
         listView.getSelectionModel().selectedItemProperty()
                 .addListener((observable, oldValue, newValue) -> {
-                    System.out.println(listView.getSelectionModel().getSelectedIndices());
-                    System.out.println(newValue);
-//                    listView.getSelectionModel().getSelectedIndices().forEach(integer -> {
-//                        Thread thread = new Thread(() -> {
-//                            HttpClient httpClient = new HttpClient(SELECT);
-//                            httpClient.createPostRequest(newValue.getFileName());
-//                        });
-//                        thread.start();
-//                    });
-
-                    if (oldValue != null && newValue != null) {
-                        Thread thread = new Thread(() -> {
-                            HttpClient httpClient = new HttpClient(SELECT);
-                            httpClient.createPostRequest(oldValue.getFileName() + "\nSecondItem" + newValue.getFileName());
-                        });
-                        thread.start();
-                    } else if (newValue != null) {
-                        Thread thread = new Thread(() -> {
-                            HttpClient httpClient = new HttpClient(SELECT);
-                            httpClient.createPostRequest(newValue.getFileName());
-                        });
-                        thread.start();
-                    }
+                    newValuePressed(newValue);
+                    Thread thread = new Thread(() -> {
+                        HttpClient httpClient = new HttpClient(SELECT);
+                        httpClient.createPostRequest(selectedFile.toString());
+                    });
+                    thread.start();
                 });
+    }
+
+    private void newValuePressed(FileItem newValue) {
+        if (listView.getSelectionModel().getSelectedIndices().size() > 1) {
+            selectedFile.add(newValue.getFileName());
+        } else if (listView.getSelectionModel().getSelectedIndices().size() == 0) {
+            selectedFile.clear();
+        }
+        else {
+            selectedFile.clear();
+            selectedFile.add(newValue.getFileName());
+        }
     }
 
     private void chooseFolder(MouseEvent mouseEvent) {
