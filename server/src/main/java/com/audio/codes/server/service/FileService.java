@@ -2,6 +2,7 @@ package com.audio.codes.server.service;
 
 import com.audio.codes.server.repository.FileRepository;
 import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,6 +10,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
+import java.lang.reflect.Type;
 import java.text.DecimalFormat;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -137,7 +139,8 @@ public class FileService {
 
     private void isItemSelected(String name) {
         Gson gson = new Gson();
-        List<String> newItems = gson.fromJson(name, List.class);
+        Type typeMyType = new TypeToken<ArrayList<String>>(){}.getType();
+        List<String> newItems = gson.fromJson(name, typeMyType);
         selectedFileCache.addAll(newItems);
         List<String> itemToRelease = new ArrayList<>();
         selectedFileCache.forEach(item -> {
